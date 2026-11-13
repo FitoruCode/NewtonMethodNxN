@@ -16,6 +16,7 @@ typedef struct newton_D
 	double *(*f)(double*, double*, int); // R^n->R^n function
 	double **D; // Derivative matrix
 	double **Dinv; // Derivative matrix inverse
+	double *dk; // step vectors
 
 }NEWTON_D;
 
@@ -27,20 +28,22 @@ void print_dvector(double *x, int n);
 void print_dmatrix(double **m, int n);
 double **get_derivative_matrix_value(double *(*f)(double *x, double *y, int n), double *x, double *y, double **m, double theta, int n);
 double **inv(double **m, double **inv, int n);
+double *multiply_matrix_v(double **m, double *x, double *y, int n);
 
 int main(void)
 {
 	NEWTON_D s;
 	set_NEWTON_D(&s);
 
-	print_dvector(s.x0, s.n);
-	print_dvector(s.y0, s.n);
-
 	get_derivative_matrix_value(s.f, s.x0, s.y0, s.D, s.delta, s.n);
 	inv(s.D, s.Dinv, s.n);
+	s.f(s.x0, s.y0, s.n);
+	multiply_matrix_v(s.Dinv, s.y0, s.dk, s.n);
 
+	print_dvector(s.y0, s.n);
 	print_dmatrix(s.D, s.n);
 	print_dmatrix(s.Dinv, s.n);
+	print_dvector(s.dk, s.n);
 
 	return 0;
 }
@@ -70,6 +73,7 @@ void set_NEWTON_D(NEWTON_D *s)
 	s->y0=dvector(0, s->n);
 	s->D=dmatrix(0, s->n, 0, s->n);
 	s->Dinv=dmatrix(0, s->n, 0, s->n);
+	s->dk=dvector(0, s->n);
 	
 	s->Nmax=10;
 	s->eps=1e-6;
@@ -119,6 +123,21 @@ void print_dmatrix(double **m, int n)
 	{
 		print_dvector(m[i], n);
 	}
+}
+
+double *multiply_matrix_v(double **m, double *x, double *y, int n)
+{
+	double v;
+	for(int8_t i=0; i<n; i++)
+	{
+		v = 0.0;
+		for(int8_t j=0; j<n; j++)
+		{
+			v = v+m[i][j]*x[j];
+		}
+		y[i] = v;
+	}
+	return y;
 }
 
 double **inv(double **m, double **inv, int n)
