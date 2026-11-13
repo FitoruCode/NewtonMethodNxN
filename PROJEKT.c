@@ -45,7 +45,7 @@ int main(void)
 double *f(double *x, double *y, int n)
 {
 	y[0] =  pow((pow(x[0], 2.0)+pow(x[1], 2.0)), 2.0) - 2*((pow(x[0], 2.0)-pow(x[1], 2.0)));
-	y[1] =  pow((pow(x[0], 3.0)+pow(x[1], 3.0)), 3.0) + pow(x[1], 3.0) - pow(x[0]-0.5, 2.0); 
+	y[1] =  pow((pow(x[0], 3.0)+pow(x[1], 3.0)), 2.0) + pow(x[1], 3.0) - pow(x[0]-0.5, 2.0); 
 	return y;
 }
 
@@ -53,7 +53,7 @@ double *f(double *x, double *y, int n)
 double *set_x0(double *x, int n)
 {
 	x[0] = 1;
-	x[1] = 2;
+	x[1] = 1;
 	return x;
 }
 
@@ -61,11 +61,11 @@ void set_NEWTON_D(NEWTON_D *s)
 {
 	s->k=0;
 	s->f=f;
+	s->n=2;
 	s->x0=dvector(0, s->n);
 	s->y0=dvector(0, s->n);
 	s->D=dmatrix(0, s->n, 0, s->n);
 	
-	s->n=2;
 	s->Nmax=10;
 	s->eps=1e-6;
 	s->delta=1e-5;
@@ -84,14 +84,13 @@ double **get_derivative_matrix_value(double *(*f)(double *x, double *y, int n), 
 		}
 	}
 
-	double v;
 	for(int8_t i=0; i<n; i++)
 	{
 		x[i] += theta;
 		y = f(x,y,n);
 		for(int8_t j=0; j<n; j++)
 		{
-			m[j][i] += -y[j];
+			m[j][i] += y[j];
 			m[j][i] /= theta;
 		}
 		x[i] -= theta;
