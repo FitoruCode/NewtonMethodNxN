@@ -14,6 +14,7 @@ typedef struct newton_D
 	double *x0; // R^n x0 vector
 	double *y0; // R^n f(x0) vector
 	double *(*f)(double*, double*, int); // R^n->R^n function
+	double **D; // Derivative matrix
 
 }NEWTON_D;
 
@@ -22,6 +23,8 @@ double *f(double *x, double *y, int n);
 double *set_x0(double *x, int n);
 void set_NEWTON_D(NEWTON_D *s);
 void print_dvector(double *x, int n);
+void print_dmatrix(double **m, int n);
+double **get_derivative_matrix_value(double *(*f)(double *x, double *y, int n), double *x, double *y, double **m, double theta, int n);
 
 int main(void)
 {
@@ -30,6 +33,10 @@ int main(void)
 
 	print_dvector(s.x0, s.n);
 	print_dvector(s.y0, s.n);
+
+	get_derivative_matrix_value(s.f, s.x0, s.y0, s.D, s.delta, s.n);
+
+	print_dmatrix(s.D, s.n);
 
 	return 0;
 }
@@ -56,6 +63,7 @@ void set_NEWTON_D(NEWTON_D *s)
 	s->f=f;
 	s->x0=dvector(0, s->n);
 	s->y0=dvector(0, s->n);
+	s->D=dmatrix(0, s->n, 0, s->n);
 	
 	s->n=2;
 	s->Nmax=10;
@@ -66,6 +74,31 @@ void set_NEWTON_D(NEWTON_D *s)
 	s->y0=s->f(s->x0, s->y0,s->n);
 }
 
+double **get_derivative_matrix_value(double *(*f)(double *x, double *y, int n), double *x, double *y, double **m, double theta, int n)
+{
+	for(int8_t i=0; i<n; i++)
+	{
+		for(int8_t j=0; j<n; j++)
+		{
+			m[i][j] = -y[i];
+		}
+	}
+
+	double v;
+	for(int8_t i=0; i<n; i++)
+	{
+		x[i] += theta;
+		y = f(x,y,n);
+		for(int8_t j=0; j<n; j++)
+		{
+			m[j][i] += -y[j];
+			m[j][i] /= theta;
+		}
+		x[i] -= theta;
+	}
+	return m;
+}
+
 void print_dvector(double *x, int n)
 {
 	for (int8_t i=0; i<n; i++)
@@ -74,4 +107,12 @@ void print_dvector(double *x, int n)
 		printf(" ");
 	}
 	printf("\n");
+}
+
+void print_dmatrix(double **m, int n)
+{
+	for(int8_t i=0; i<n; i++)
+	{
+		print_dvector(m[i], n);
+	}
 }
