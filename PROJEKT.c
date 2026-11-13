@@ -15,6 +15,7 @@ typedef struct newton_D
 	double *y0; // R^n f(x0) vector
 	double *(*f)(double*, double*, int); // R^n->R^n function
 	double **D; // Derivative matrix
+	double **Dinv; // Derivative matrix inverse
 
 }NEWTON_D;
 
@@ -25,6 +26,7 @@ void set_NEWTON_D(NEWTON_D *s);
 void print_dvector(double *x, int n);
 void print_dmatrix(double **m, int n);
 double **get_derivative_matrix_value(double *(*f)(double *x, double *y, int n), double *x, double *y, double **m, double theta, int n);
+double **inv(double **m, double **inv, int n);
 
 int main(void)
 {
@@ -35,8 +37,10 @@ int main(void)
 	print_dvector(s.y0, s.n);
 
 	get_derivative_matrix_value(s.f, s.x0, s.y0, s.D, s.delta, s.n);
+	inv(s.D, s.Dinv, s.n);
 
 	print_dmatrix(s.D, s.n);
+	print_dmatrix(s.Dinv, s.n);
 
 	return 0;
 }
@@ -65,6 +69,7 @@ void set_NEWTON_D(NEWTON_D *s)
 	s->x0=dvector(0, s->n);
 	s->y0=dvector(0, s->n);
 	s->D=dmatrix(0, s->n, 0, s->n);
+	s->Dinv=dmatrix(0, s->n, 0, s->n);
 	
 	s->Nmax=10;
 	s->eps=1e-6;
@@ -114,4 +119,87 @@ void print_dmatrix(double **m, int n)
 	{
 		print_dvector(m[i], n);
 	}
+}
+
+double **inv(double **m, double **inv, int n)
+{
+    if (n <= 0 || m == NULL || inv == NULL)
+        return NULL;
+    double **a = malloc(n * sizeof(double *));
+
+    if (a == NULL)
+        return NULL;
+
+    for (int i = 0; i < n; i++)
+    {
+        a[i] = malloc(n * sizeof(double));
+
+        if (a[i] == NULL)
+        {
+            for (int k = 0; k < i; k++)
+                free(a[k]);
+            free(a);
+            return NULL;
+        }
+        for (int j = 0; j < n; j++)
+            a[i][j] = m[i][j];
+    }
+
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            inv[i][j] = (i == j) ? 1.0 : 0.0;
+
+    for (int i = 0; i < n; i++)
+    {
+        int pivot = i;
+
+        for (int j = i + 1; j < n; j++)
+            if (fabs(a[j][i]) > fabs(a[pivot][i]))
+                pivot = j;
+
+        if (fabs(a[pivot][i]) < 1e-12)
+        {
+            for (int k = 0; k < n; k++)
+                free(a[k]);
+
+            free(a);
+            return NULL;
+        }
+
+        for (int j = 0; j < n; j++)
+        {
+            double temp = a[i][j];
+            a[i][j] = a[pivot][j];
+            a[pivot][j] = temp;
+
+            temp = inv[i][j];
+            inv[i][j] = inv[pivot][j];
+            inv[pivot][j] = temp;
+        }
+
+        double div = a[i][i];
+        for (int j = 0; j < n; j++)
+        {
+            a[i][j] /= div;
+            inv[i][j] /= div;
+        }
+
+        for (int j = 0; j < n; j++)
+        {
+            if (j == i)
+                continue;
+
+            double factor = a[j][i];
+            for (int k = 0; k < n; k++)
+            {
+                a[j][k] -= factor * a[i][k];
+                inv[j][k] -= factor * inv[i][k];
+            }
+        }
+    }
+
+    for (int i = 0; i < n; i++)
+        free(a[i]);
+    free(a);
+    return inv;
 }
