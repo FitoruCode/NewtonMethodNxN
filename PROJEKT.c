@@ -37,6 +37,7 @@ double *scale_vector(double *x, double gamma, int n);
 double vector_norm(double *x, int n);
 double *subtract_vector(double *x, double *y, int n);
 bool stop_criterion(double normPrevious, double normCurrent, double eps, int Nmax, int k);
+void print_step(double *x, double yNorm, int k, int n);
 
 int main(void)
 {
@@ -45,14 +46,15 @@ int main(void)
 
 	while(true)
 	{
-		s.y0 = f(s.x0, s.y0, s.n);
+		print_step(s.x0, s.yNorm, s.k, s.n);
 		s.D = get_derivative_matrix_value(s.f, s.x0, s.y0, s.D, s.delta, s.n);
 		s.Dinv = inv(s.D, s.Dinv, s.n);
 		s.dk = multiply_matrix_v(s.Dinv, s.y0, s.dk, s.n);
 		s.dk = scale_vector(s.dk, s.gamma, s.n);
 		s.x0 = subtract_vector(s.x0, s.dk, s.n);
+		s.y0 = f(s.x0, s.y0, s.n);
 		s.currentNorm = vector_norm(s.y0, s.n);
-
+		
 		if (stop_criterion(s.yNorm, s.currentNorm, s.eps, s.Nmax, s.k)) {break;}
 		s.yNorm = s.currentNorm;
 		s.k += 1;
@@ -102,7 +104,7 @@ void set_NEWTON_D(NEWTON_D *s)
 bool stop_criterion(double normPrevious, double normCurrent, double eps, int Nmax, int k)
 {
 	if (k>=Nmax) {return true;}
-	if (abs(normPrevious-normCurrent)<eps) {return true;}
+	if (fabs(normPrevious-normCurrent)<eps) {return true;}
 	return false;
 }
 
@@ -157,6 +159,18 @@ double *scale_vector(double *x, double gamma, int n)
 	}
 	return x;
 }
+
+void print_step(double *x, double yNorm, int k, int n)
+{
+	printf("Step %d: x={", k);
+	for(int8_t i=0; i<n-1; i++)
+	{
+		printf("%f, ", x[i]);
+	}
+	printf("%f}", x[n-1]);
+	printf(", ||y||=%f", yNorm);
+}
+
 
 void print_dvector(double *x, int n)
 {
