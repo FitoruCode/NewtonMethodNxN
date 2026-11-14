@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <math.h>
 #include "nrutil.h"
 
@@ -10,7 +11,8 @@ typedef struct newton_D
 	int k;      // iteration number
 	double eps; // precision stop criterion
 	double delta; // numerical derivative aproximation step'
-	double gamma; // step scaler TODO - alg for it 
+	double gamma; // step scaler TODO - alg for it
+	double yNorm; // previous step norm
 	
 	double *x0; // R^n x0 vector
 	double *y0; // R^n f(x0) vector
@@ -33,6 +35,7 @@ double *multiply_matrix_v(double **m, double *x, double *y, int n);
 double *scale_vector(double *x, double gamma, int n);
 double vector_norm(double *x, int n);
 double *subtract_vector(double *x, double *y, int n);
+bool stop_criterion(double normPrevious, double normCurrent, double eps, int Nmax, int k);
 
 int main(void)
 {
@@ -91,6 +94,14 @@ void set_NEWTON_D(NEWTON_D *s)
 
 	s->x0=set_x0(s->x0, s->n);
 	s->y0=s->f(s->x0, s->y0,s->n);
+	s->yNorm=vector_norm(s->y0, s->n);
+}
+
+bool stop_criterion(double normPrevious, double normCurrent, double eps, int Nmax, int k)
+{
+	if (k>=Nmax) {return true;}
+	if (abs(normPrevious-normCurrent)<eps) {return true;}
+	return false;
 }
 
 double **get_derivative_matrix_value(double *(*f)(double *x, double *y, int n), double *x, double *y, double **m, double theta, int n)
