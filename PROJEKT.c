@@ -9,7 +9,8 @@ typedef struct newton_D
 	int Nmax;   // max iterations
 	int k;      // iteration number
 	double eps; // precision stop criterion
-	double delta; // numerical derivative aproximation step
+	double delta; // numerical derivative aproximation step'
+	double gamma; // step scaler TODO - alg for it 
 	
 	double *x0; // R^n x0 vector
 	double *y0; // R^n f(x0) vector
@@ -29,6 +30,8 @@ void print_dmatrix(double **m, int n);
 double **get_derivative_matrix_value(double *(*f)(double *x, double *y, int n), double *x, double *y, double **m, double theta, int n);
 double **inv(double **m, double **inv, int n);
 double *multiply_matrix_v(double **m, double *x, double *y, int n);
+double *scale_vector(double *x, double gamma, int n);
+double vector_norm(double *x, int n);
 
 int main(void)
 {
@@ -44,6 +47,11 @@ int main(void)
 	print_dmatrix(s.D, s.n);
 	print_dmatrix(s.Dinv, s.n);
 	print_dvector(s.dk, s.n);
+
+	scale_vector(s.dk, s.gamma, s.n);
+	print_dvector(s.dk, s.n);
+
+	printf("%f", vector_norm(s.y0, s.n));
 
 	return 0;
 }
@@ -69,10 +77,11 @@ void set_NEWTON_D(NEWTON_D *s)
 	s->k=0;
 	s->f=f;
 	s->n=2;
-	s->x0=dvector(0, s->n);
-	s->y0=dvector(0, s->n);
-	s->D=dmatrix(0, s->n, 0, s->n);
-	s->Dinv=dmatrix(0, s->n, 0, s->n);
+	s->gamma=0.1;
+	s->x0=dvector(0, s->n-1);
+	s->y0=dvector(0, s->n-1);
+	s->D=dmatrix(0, s->n-1, 0, s->n-1);
+	s->Dinv=dmatrix(0, s->n-1, 0, s->n-1);
 	s->dk=dvector(0, s->n);
 	
 	s->Nmax=10;
@@ -105,6 +114,25 @@ double **get_derivative_matrix_value(double *(*f)(double *x, double *y, int n), 
 		x[i] -= theta;
 	}
 	return m;
+}
+
+double vector_norm(double *x, int n)
+{
+	double norm = 0.0;
+	for(int8_t i=0; i<n; i++)
+	{
+		norm += x[i]*x[i];
+	}
+	return sqrt(norm);
+}
+
+double *scale_vector(double *x, double gamma, int n)
+{
+	for(int8_t i=0; i<n; i++)
+	{
+		x[i] = x[i]*gamma;
+	}
+	return x;
 }
 
 void print_dvector(double *x, int n)
