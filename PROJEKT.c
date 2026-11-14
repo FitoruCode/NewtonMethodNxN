@@ -91,7 +91,7 @@ void set_NEWTON_D(NEWTON_D *s)
 	s->Dinv=dmatrix(0, s->n-1, 0, s->n-1);
 	s->dk=dvector(0, s->n);
 	
-	s->Nmax=10;
+	s->Nmax=100;
 	s->eps=1e-6;
 	s->delta=1e-5;
 
@@ -169,6 +169,7 @@ void print_step(double *x, double yNorm, int k, int n)
 	}
 	printf("%f}", x[n-1]);
 	printf(", ||y||=%f", yNorm);
+	printf("\n");
 }
 
 
