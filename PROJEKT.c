@@ -32,6 +32,7 @@ double **inv(double **m, double **inv, int n);
 double *multiply_matrix_v(double **m, double *x, double *y, int n);
 double *scale_vector(double *x, double gamma, int n);
 double vector_norm(double *x, int n);
+double *subtract_vector(double *x, double *y, int n);
 
 int main(void)
 {
@@ -114,6 +115,15 @@ double **get_derivative_matrix_value(double *(*f)(double *x, double *y, int n), 
 		x[i] -= theta;
 	}
 	return m;
+}
+
+double *subtract_vector(double *x, double *y, int n)
+{
+	for(int8_t i=0; i<n; i++)
+	{
+		x[i] -= y[i];
+	}
+	return x;
 }
 
 double vector_norm(double *x, int n)
