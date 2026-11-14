@@ -13,6 +13,7 @@ typedef struct newton_D
 	double delta; // numerical derivative aproximation step'
 	double gamma; // step scaler TODO - alg for it
 	double yNorm; // previous step norm
+	double currentNorm; // current step norm
 	
 	double *x0; // R^n x0 vector
 	double *y0; // R^n f(x0) vector
@@ -29,7 +30,7 @@ double *set_x0(double *x, int n);
 void set_NEWTON_D(NEWTON_D *s);
 void print_dvector(double *x, int n);
 void print_dmatrix(double **m, int n);
-double **get_derivative_matrix_value(double *(*f)(double *x, double *y, int n), double *x, double *y, double **m, double theta, int n);
+double **get_derivative_matrix_value(double *(*f)(double *x, double *y, int n), double *x, double *y, double **m, double delta, int n);
 double **inv(double **m, double **inv, int n);
 double *multiply_matrix_v(double **m, double *x, double *y, int n);
 double *scale_vector(double *x, double gamma, int n);
@@ -42,20 +43,20 @@ int main(void)
 	NEWTON_D s;
 	set_NEWTON_D(&s);
 
-	get_derivative_matrix_value(s.f, s.x0, s.y0, s.D, s.delta, s.n);
-	inv(s.D, s.Dinv, s.n);
-	s.f(s.x0, s.y0, s.n);
-	multiply_matrix_v(s.Dinv, s.y0, s.dk, s.n);
+	while(true)
+	{
+		s.y0 = f(s.x0, s.y0, s.n);
+		s.D = get_derivative_matrix_value(s.f, s.x0, s.y0, s.D, s.delta, s.n);
+		s.Dinv = inv(s.D, s.Dinv, s.n);
+		s.dk = multiply_matrix_v(s.Dinv, s.y0, s.dk, s.n);
+		s.dk = scale_vector(s.dk, s.gamma, s.n);
+		s.x0 = subtract_vector(s.x0, s.dk, s.n);
+		s.currentNorm = vector_norm(s.y0, s.n);
 
-	print_dvector(s.y0, s.n);
-	print_dmatrix(s.D, s.n);
-	print_dmatrix(s.Dinv, s.n);
-	print_dvector(s.dk, s.n);
-
-	scale_vector(s.dk, s.gamma, s.n);
-	print_dvector(s.dk, s.n);
-
-	printf("%f", vector_norm(s.y0, s.n));
+		if (stop_criterion(s.yNorm, s.currentNorm, s.eps, s.Nmax, s.k)) {break;}
+		s.yNorm = s.currentNorm;
+		s.k += 1;
+	}
 
 	return 0;
 }
@@ -95,6 +96,7 @@ void set_NEWTON_D(NEWTON_D *s)
 	s->x0=set_x0(s->x0, s->n);
 	s->y0=s->f(s->x0, s->y0,s->n);
 	s->yNorm=vector_norm(s->y0, s->n);
+	s->currentNorm=s->yNorm+99;
 }
 
 bool stop_criterion(double normPrevious, double normCurrent, double eps, int Nmax, int k)
@@ -104,7 +106,7 @@ bool stop_criterion(double normPrevious, double normCurrent, double eps, int Nma
 	return false;
 }
 
-double **get_derivative_matrix_value(double *(*f)(double *x, double *y, int n), double *x, double *y, double **m, double theta, int n)
+double **get_derivative_matrix_value(double *(*f)(double *x, double *y, int n), double *x, double *y, double **m, double delta, int n)
 {
 	for(int8_t i=0; i<n; i++)
 	{
@@ -116,14 +118,14 @@ double **get_derivative_matrix_value(double *(*f)(double *x, double *y, int n), 
 
 	for(int8_t i=0; i<n; i++)
 	{
-		x[i] += theta;
+		x[i] += delta;
 		y = f(x,y,n);
 		for(int8_t j=0; j<n; j++)
 		{
 			m[j][i] += y[j];
-			m[j][i] /= theta;
+			m[j][i] /= delta;
 		}
-		x[i] -= theta;
+		x[i] -= delta;
 	}
 	return m;
 }
