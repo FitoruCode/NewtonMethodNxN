@@ -6,7 +6,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include "nrutil.h"
-#define NR_END 0              /* byˆo 1 */
+#define NR_END 0              /* byï¿½o 1 */
 #define FREE_ARG char*
 
 void nrerror(char error_text[])

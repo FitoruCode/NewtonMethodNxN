@@ -1,7 +1,7 @@
 # Compile
 
 ```{bash}
-gcc PROJEKT.c nrutil.c -lm -o projekt
+gcc PROJEKT.c libs/src/nrutil.c -Ilibs/include -lm -o projekt
 ```
 
 # Run
