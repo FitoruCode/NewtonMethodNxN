@@ -28,6 +28,7 @@ int main(void);
 double *f(double *x, double *y, int n);
 double *set_x0(double *x, int n);
 void set_NEWTON_D(NEWTON_D *s);
+void free_memory(NEWTON_D *s);
 void print_dvector(double *x, int n);
 void print_dmatrix(double **m, int n);
 double **get_derivative_matrix_value(double *(*f)(double *x, double *y, int n), double *x, double *y, double **m, double delta, int n);
@@ -60,6 +61,7 @@ int main(void)
 		s.k += 1;
 	}
 
+	free_memory(&s);
 	return 0;
 }
 
@@ -99,6 +101,15 @@ void set_NEWTON_D(NEWTON_D *s)
 	s->y0=s->f(s->x0, s->y0,s->n);
 	s->yNorm=vector_norm(s->y0, s->n);
 	s->currentNorm=s->yNorm+99;
+}
+
+void free_memory(NEWTON_D *s)
+{
+	free_dvector(s->x0, 0, s->n-1);
+	free_dvector(s->y0, 0, s->n-1);
+	free_dvector(s->dk, 0, s->n-1);
+	free_dmatrix(s->D, 0, s->n-1, 0, s->n-1);
+	free_dmatrix(s->Dinv, 0, s->n-1, 0, s->n-1);
 }
 
 bool stop_criterion(double normPrevious, double normCurrent, double eps, int Nmax, int k)
