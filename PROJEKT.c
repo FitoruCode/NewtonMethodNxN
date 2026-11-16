@@ -21,8 +21,9 @@ typedef struct newton_D
 	double **D; // Derivative matrix
 	double **Dinv; // Derivative matrix inverse
 	double *dk; // step vectors
+	double *hv; // h search vector
 
-	FILE *fp // output file
+	FILE *fp; // output file
 }NEWTON_D;
 
 int main(void);
@@ -41,8 +42,19 @@ double *subtract_vector(double *x, double *y, int n);
 bool stop_criterion(double normPrevious, double normCurrent, double eps, int Nmax, int k);
 void print_step(double *x, double yNorm, int k, int n);
 void log_step(double *x, double yNorm, int k, int n, FILE* fp);
+int search_j(double *(*f)(double *x, double *y, int n), double *x, double *y, double *dk, double *hv, double C, int n);
+double matrix_norm(double **x, int n);
+int classical_newton(void);
+double get_h_constant(double **D, double *d, int n);
 
-int main(void)
+
+int main()
+{
+	classical_newton();
+	return 0;
+}
+
+int classical_newton(void)
 {
 	NEWTON_D s;
 	set_NEWTON_D(&s);
@@ -77,6 +89,40 @@ double *f(double *x, double *y, int n)
 	return y;
 }
 
+int search_j(double *(*f)(double *x, double *y, int n), double *x, double *y, double *dk, double *hv, double C, int n)
+{
+	double tau;
+	double h0=0.0;
+	double htau;
+	int j=1;
+
+	for(int8_t i=0; i<n; i++)
+	{
+		h0 += y[i]*y[i];
+	}
+
+	while(true)
+	{
+		tau = pow(2, -j);
+		for(int8_t i=0; i<n; i++)
+		{
+			hv[i] = x[i]-tau*dk[i];
+		}
+		y=f(hv,y,n);
+
+		htau = 0.0;
+		for(int8_t i=0; i<n; i++)
+		{
+			htau += y[i]*y[i];
+		}
+		if(htau <= h0-pow(2, -j)*C)
+		{
+			return j;
+		}
+	}
+	return -1;
+}
+
 // Example x0
 double *set_x0(double *x, int n)
 {
@@ -95,7 +141,8 @@ void set_NEWTON_D(NEWTON_D *s)
 	s->y0=dvector(0, s->n-1);
 	s->D=dmatrix(0, s->n-1, 0, s->n-1);
 	s->Dinv=dmatrix(0, s->n-1, 0, s->n-1);
-	s->dk=dvector(0, s->n);
+	s->dk=dvector(0, s->n-1);
+	s->hv=dvector(0, s->n-1);
 	
 	s->Nmax=100;
 	s->eps=1e-6;
@@ -114,6 +161,7 @@ void free_memory(NEWTON_D *s)
 	free_dvector(s->x0, 0, s->n-1);
 	free_dvector(s->y0, 0, s->n-1);
 	free_dvector(s->dk, 0, s->n-1);
+	free_dvector(s->hv, 0, s->n-1);
 	free_dmatrix(s->D, 0, s->n-1, 0, s->n-1);
 	free_dmatrix(s->Dinv, 0, s->n-1, 0, s->n-1);
 }
@@ -166,6 +214,25 @@ double vector_norm(double *x, int n)
 		norm += x[i]*x[i];
 	}
 	return sqrt(norm);
+}
+
+double matrix_norm(double **x, int n)
+{
+	double norm = 0.0;
+	for(int8_t i=0; i<n; i++)
+	{
+		for(int8_t j=0; j<n; j++)
+		{
+			norm += x[i][j]*x[i][j];
+		}
+	}
+	return sqrt(norm);
+}
+
+double get_h_constant(double **D, double *d, int n)
+{
+	double result=matrix_norm(D, n)*vector_norm(d, n)*0.25;
+	return result;
 }
 
 double *scale_vector(double *x, double gamma, int n)
