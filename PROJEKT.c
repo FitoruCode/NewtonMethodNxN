@@ -119,6 +119,7 @@ int search_j(double *(*f)(double *x, double *y, int n), double *x, double *y, do
 		{
 			return j;
 		}
+		j=j=+1;
 	}
 	return -1;
 }
