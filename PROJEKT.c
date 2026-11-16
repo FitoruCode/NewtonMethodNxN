@@ -22,6 +22,7 @@ typedef struct newton_D
 	double **Dinv; // Derivative matrix inverse
 	double *dk; // step vectors
 
+	FILE *fp // output file
 }NEWTON_D;
 
 int main(void);
@@ -39,6 +40,7 @@ double vector_norm(double *x, int n);
 double *subtract_vector(double *x, double *y, int n);
 bool stop_criterion(double normPrevious, double normCurrent, double eps, int Nmax, int k);
 void print_step(double *x, double yNorm, int k, int n);
+void log_step(double *x, double yNorm, int k, int n, FILE* fp);
 
 int main(void)
 {
@@ -48,6 +50,8 @@ int main(void)
 	while(true)
 	{
 		print_step(s.x0, s.yNorm, s.k, s.n);
+		log_step(s.x0, s.yNorm, s.k, s.n, s.fp);
+		
 		s.D = get_derivative_matrix_value(s.f, s.x0, s.y0, s.D, s.delta, s.n);
 		s.Dinv = inv(s.D, s.Dinv, s.n);
 		s.dk = multiply_matrix_v(s.Dinv, s.y0, s.dk, s.n);
@@ -101,6 +105,8 @@ void set_NEWTON_D(NEWTON_D *s)
 	s->y0=s->f(s->x0, s->y0,s->n);
 	s->yNorm=vector_norm(s->y0, s->n);
 	s->currentNorm=s->yNorm+99;
+
+	s->fp=fopen("./output/out.txt", "w");
 }
 
 void free_memory(NEWTON_D *s)
@@ -169,6 +175,22 @@ double *scale_vector(double *x, double gamma, int n)
 		x[i] = x[i]*gamma;
 	}
 	return x;
+}
+
+void log_step(double *x, double yNorm, int k, int n, FILE* fp)
+{
+	if (fp == NULL)
+    {
+        return;
+    }
+	fprintf(fp, "Step %d: x={", k);
+	for(int8_t i=0; i<n-1; i++)
+	{
+		fprintf(fp, "%f, ", x[i]);
+	}
+	fprintf(fp, "%f}", x[n-1]);
+	fprintf(fp, ", ||y||=%f", yNorm);
+	fprintf(fp, "\n");
 }
 
 void print_step(double *x, double yNorm, int k, int n)
