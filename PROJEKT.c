@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include "nrutil.h"
+#include "dislin.h"
 
 typedef struct newton_D
 {
@@ -46,6 +47,7 @@ int search_j(double *(*f)(double *x, double *y, int n), double *x, double *y, do
 double matrix_norm(double **x, int n);
 void classical_newton(void);
 void modified_newton(void);
+void plot(double *(*func)(double *, double *, int), const double *final_x);
 double get_h_constant(double **D, double *d, int n);
 double *step_j(double *(*f)(double *x, double *y, int n), double *x, double *y, double *dk, double *hv, double C, int n);
 
@@ -79,6 +81,7 @@ void classical_newton()
 		s.k += 1;
 	}
 
+	plot(s.f, s.x0);
 	free_memory(&s);
 }
 
@@ -109,7 +112,65 @@ void modified_newton()
 		s.k += 1;
 	}
 
+	plot(s.f, s.x0);
 	free_memory(&s);
+}
+
+void plot(double *(*func)(double *, double *, int), const double *final_x)
+{
+	enum { POINTS = 61 };
+	float z[POINTS][POINTS];
+	double x[2], y[2];
+	double xmin = final_x[0] - 0.5, xmax = final_x[0] + 0.5;
+	double ymin = final_x[1] - 0.5, ymax = final_x[1] + 0.5;
+	double zmax = 0.0;
+	char caption[160];
+
+	for (int i = 0; i < POINTS; i++)
+	{
+		for (int j = 0; j < POINTS; j++)
+		{
+			x[0] = xmin + (xmax - xmin) * i / (POINTS - 1);
+			x[1] = ymin + (ymax - ymin) * j / (POINTS - 1);
+			func(x, y, 2);
+			z[i][j] = (float)hypot(y[0], y[1]);
+			zmax = fmax(zmax, z[i][j]);
+		}
+	}
+	x[0] = final_x[0];
+	x[1] = final_x[1];
+	func(x, y, 2);
+	double final_z = hypot(y[0], y[1]);
+	zmax = fmax(1e-6, 1.1 * zmax);
+	snprintf(caption, sizeof(caption),
+	         "x = (%.6f, %.6f), ||f(x)|| = %.3e",
+	         final_x[0], final_x[1], final_z);
+
+	metafl("PNG");
+	setfil("output/newton.png");
+	filmod("DELETE");
+	setpag("DA4L");
+	scrmod("REVERS");
+	disini();
+	complx();
+	axspos(350, 1750);
+	axslen(2200, 1300);
+	name("x1", "X");
+	name("x2", "Y");
+	name("||f(x1, x2)||", "Z");
+	titlin("Metoda Newtona", 1);
+	titlin(caption, 3);
+	view3d(-5.0f, -5.0f, 4.0f, "ABS");
+	graf3d(xmin, xmax, xmin, 0.25f, ymin, ymax, ymin, 0.25f,
+	       0.0f, zmax, 0.0f, zmax / 5.0f);
+	height(36);
+	title();
+	color("CYAN");
+	surmat(&z[0][0], POINTS, POINTS, 1, 1);
+	color("RED");
+	hsym3d(0.06f);
+	symb3d(5, final_x[0], final_x[1], final_z);
+	disfin();
 }
 
 // Example function from end of chapter 12 in lab pdf script
