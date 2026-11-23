@@ -18,7 +18,7 @@ void nrerror(char error_text[])
         exit(1);
 }
 
-float *vector(long nl, long nh)
+float *nr_vector(long nl, long nh)
 /* allocate a float vector with subscript range v[nl..nh] */
 {
         float *v;

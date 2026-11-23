@@ -43,7 +43,7 @@ static int iminarg1,iminarg2;
 #define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
 
 void nrerror(char error_text[]);
-float *vector(long nl, long nh);
+float *nr_vector(long nl, long nh);
 int *ivector(long nl, long nh);
 unsigned char *cvector(long nl, long nh);
 
