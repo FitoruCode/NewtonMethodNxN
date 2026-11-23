@@ -44,17 +44,18 @@ void print_step(double *x, double yNorm, int k, int n);
 void log_step(double *x, double yNorm, int k, int n, FILE* fp);
 int search_j(double *(*f)(double *x, double *y, int n), double *x, double *y, double *dk, double *hv, double C, int n);
 double matrix_norm(double **x, int n);
-int classical_newton(void);
+void classical_newton(void);
+void modified_newton(void);
 double get_h_constant(double **D, double *d, int n);
-
+double *step_j(double *(*f)(double *x, double *y, int n), double *x, double *y, double *dk, double *hv, double C, int n);
 
 int main()
 {
-	classical_newton();
+	modified_newton();
 	return 0;
 }
 
-int classical_newton(void)
+void classical_newton()
 {
 	NEWTON_D s;
 	set_NEWTON_D(&s);
@@ -66,6 +67,7 @@ int classical_newton(void)
 		
 		s.D = get_derivative_matrix_value(s.f, s.x0, s.y0, s.D, s.delta, s.n);
 		s.Dinv = inv(s.D, s.Dinv, s.n);
+		s.y0 = s.f(s.x0, s.y0, s.n);
 		s.dk = multiply_matrix_v(s.Dinv, s.y0, s.dk, s.n);
 		s.dk = scale_vector(s.dk, s.gamma, s.n);
 		s.x0 = subtract_vector(s.x0, s.dk, s.n);
@@ -78,7 +80,36 @@ int classical_newton(void)
 	}
 
 	free_memory(&s);
-	return 0;
+}
+
+void modified_newton()
+{
+	NEWTON_D s;
+	set_NEWTON_D(&s);
+
+	while(true)
+	{
+		print_step(s.x0, s.yNorm, s.k, s.n);
+		log_step(s.x0, s.yNorm, s.k, s.n, s.fp);
+		
+		s.D = get_derivative_matrix_value(s.f, s.x0, s.y0, s.D, s.delta, s.n);
+		s.Dinv = inv(s.D, s.Dinv, s.n);
+		s.y0 = s.f(s.x0, s.y0, s.n);
+		s.dk = multiply_matrix_v(s.Dinv, s.y0, s.dk, s.n);
+		step_j(s.f, s.x0, s.y0, s.dk, s.hv, 0.25*vector_norm(s.dk, s.n)*matrix_norm(s.D, s.n), s.n);
+		for (int i = 0; i < s.n; i++)
+		{
+			s.x0[i] = s.hv[i];
+		}
+		s.y0 = f(s.x0, s.y0, s.n);
+		s.currentNorm = vector_norm(s.y0, s.n);
+		
+		if (stop_criterion(s.yNorm, s.currentNorm, s.eps, s.Nmax, s.k)) {break;}
+		s.yNorm = s.currentNorm;
+		s.k += 1;
+	}
+
+	free_memory(&s);
 }
 
 // Example function from end of chapter 12 in lab pdf script
@@ -89,12 +120,48 @@ double *f(double *x, double *y, int n)
 	return y;
 }
 
+double *step_j(double *(*f)(double *x, double *y, int n), double *x, double *y, double *dk, double *hv, double C, int n)
+{
+	int j = search_j(f, x, y, dk, hv, C, n);
+	int minimum_i=-1;
+	double tau;
+	double htau;
+	double minimum_score=999999999999;
+
+	for(int8_t i=0; i<=j; i++)
+	{
+		tau = pow(2, -i);
+		for(int8_t k=0; k<n; k++)
+		{
+			hv[k] = x[k]-tau*dk[k];
+		}
+		y=f(hv,y,n);
+		htau = 0.0;
+		for(int8_t k=0; k<n; k++)
+		{
+			htau += y[k]*y[k];
+		}
+		if (htau<minimum_score)
+		{
+			minimum_score=htau;
+			minimum_i=i;
+		}
+	}
+
+	tau = pow(2, -minimum_i);
+	for(int8_t k=0; k<n; k++)
+	{
+		hv[k] = x[k]-tau*dk[k];
+	}
+	return hv;
+}
+
 int search_j(double *(*f)(double *x, double *y, int n), double *x, double *y, double *dk, double *hv, double C, int n)
 {
 	double tau;
 	double h0=0.0;
 	double htau;
-	int j=1;
+	int j=0;
 
 	for(int8_t i=0; i<n; i++)
 	{
@@ -119,9 +186,13 @@ int search_j(double *(*f)(double *x, double *y, int n), double *x, double *y, do
 		{
 			return j;
 		}
-		j=j=+1;
+		j=j+1;
+		if (j>10)
+		{
+			break;
+		}
 	}
-	return -1;
+	return j;
 }
 
 // Example x0
