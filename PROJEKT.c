@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
-#include "nrutil.h"
+#include "nrutil.h" // no vector class
 #include "dislin.h"
 
 typedef struct newton_D
